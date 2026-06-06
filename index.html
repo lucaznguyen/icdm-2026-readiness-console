@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Client-side ICDM 2026 submission readiness checker with official evidence and step-by-step visual validation."
+    />
+    <title>ICDM 2026 Readiness Console</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script defer src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js"></script>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <canvas id="signalCanvas" aria-hidden="true"></canvas>
+
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="ICDM 2026 readiness console home">
+        <span class="brand-mark"><i data-lucide="scan-check"></i></span>
+        <span>
+          <strong>ICDM 2026</strong>
+          <small>Readiness Console</small>
+        </span>
+      </a>
+      <nav class="source-links" aria-label="Official sources">
+        <a href="https://icdm2026.neu.edu.cn/11661/list.htm" target="_blank" rel="noreferrer">
+          Research CFP
+        </a>
+        <a href="https://icdm2026.neu.edu.cn/CallforAppliedTrack/list.htm" target="_blank" rel="noreferrer">
+          Applied CFP
+        </a>
+      </nav>
+    </header>
+
+    <main id="top" class="page-shell">
+      <section class="hero-band" aria-labelledby="pageTitle">
+        <div class="hero-copy">
+          <p class="eyebrow">Submission gate</p>
+          <h1 id="pageTitle">Paper readiness, checked step by step.</h1>
+          <p class="lede">
+            Upload a paper package and watch the submission gates move from neutral to pass or fail with reasons, traces, and official policy evidence.
+          </p>
+        </div>
+
+        <div class="status-board" aria-live="polite">
+          <div class="score-ring" id="scoreRing" style="--score: 0">
+            <span id="scoreValue">0%</span>
+          </div>
+          <div>
+            <p class="status-kicker">Current verdict</p>
+            <h2 id="verdictText">Awaiting paper</h2>
+            <p id="verdictDetail">No submission package has been analyzed yet.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace-grid" aria-label="Readiness workspace">
+        <section class="tool-panel upload-panel" aria-labelledby="uploadTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Input</p>
+              <h2 id="uploadTitle">Submission package</h2>
+            </div>
+            <button class="icon-button ghost" id="resetButton" type="button" aria-label="Reset checker">
+              <i data-lucide="rotate-ccw"></i>
+            </button>
+          </div>
+
+          <div class="track-control" role="group" aria-label="Submission track">
+            <label>
+              <input type="radio" name="track" value="research" checked />
+              <span>Research Track</span>
+            </label>
+            <label>
+              <input type="radio" name="track" value="applied" />
+              <span>Applied Track</span>
+            </label>
+          </div>
+
+          <label class="dropzone" id="dropzone" for="fileInput">
+            <input id="fileInput" type="file" multiple accept=".pdf,.tex,.bib,.txt" />
+            <span class="drop-icon"><i data-lucide="file-up"></i></span>
+            <strong>Choose paper files</strong>
+            <small>PDF required. TeX, BibTeX, TXT, and reproducibility checklist files improve evidence.</small>
+          </label>
+
+          <div class="file-list" id="fileList" aria-live="polite"></div>
+
+          <div class="button-row">
+            <button class="primary-button" id="analyzeButton" type="button">
+              <i data-lucide="sparkles"></i>
+              Analyze readiness
+            </button>
+            <button class="secondary-button" id="exportButton" type="button" disabled>
+              <i data-lucide="download"></i>
+              Export report
+            </button>
+          </div>
+
+          <div class="manual-panel" aria-labelledby="manualTitle">
+            <div class="panel-heading compact">
+              <div>
+                <p class="eyebrow">Author attestations</p>
+                <h3 id="manualTitle">Evidence only authors can provide</h3>
+              </div>
+            </div>
+            <div class="manual-list" id="manualList"></div>
+          </div>
+        </section>
+
+        <section class="tool-panel visual-panel" aria-labelledby="flowTitle">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Progress</p>
+              <h2 id="flowTitle">Readiness pipeline</h2>
+            </div>
+            <span class="deadline-pill" id="deadlinePill">June 6, 2026 AoE</span>
+          </div>
+
+          <div class="flowline" id="flowline" aria-label="Readiness checks"></div>
+
+          <div class="preview-grid">
+            <div class="paper-stage">
+              <canvas id="paperPreview" aria-label="First page PDF preview"></canvas>
+              <div class="empty-preview" id="emptyPreview">
+                <i data-lucide="file-search"></i>
+                <span>Paper preview</span>
+              </div>
+            </div>
+            <div class="insight-strip" id="insightStrip"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="checks-section" aria-labelledby="checksTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Checks</p>
+            <h2 id="checksTitle">Submission gates</h2>
+          </div>
+          <p id="checksMeta">Rules are scoped to the selected ICDM 2026 track.</p>
+        </div>
+        <div class="checks-grid" id="checksGrid"></div>
+      </section>
+
+      <section class="evidence-section" aria-labelledby="evidenceTitle">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Official basis</p>
+            <h2 id="evidenceTitle">Why each gate exists</h2>
+          </div>
+          <p>Each rule below links to the official ICDM 2026 source used by the checker.</p>
+        </div>
+        <div class="evidence-grid" id="evidenceGrid"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>Client-side only. Uploaded files stay in this browser session.</span>
+      <span>Last policy sync: June 6, 2026.</span>
+    </footer>
+  </body>
+</html>
