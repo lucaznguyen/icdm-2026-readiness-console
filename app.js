@@ -47,6 +47,16 @@ const MANUAL_ITEMS = [
     detail: "Applied CFP states a paper should be submitted to Research or Applied, not both.",
   },
   {
+    key: "ieeeTemplate",
+    label: "Official IEEE two-column template checked",
+    detail: "Use this only if the PDF heuristic cannot see the source/template evidence.",
+  },
+  {
+    key: "anonymityReviewed",
+    label: "Research Track anonymization manually reviewed",
+    detail: "Names, affiliations, emails, acknowledgments, file names, and code links were checked.",
+  },
+  {
     key: "reproChecklist",
     label: "Reproducibility checklist PDF is complete",
     detail: "Upload the checklist or confirm it is ready for the submission form.",
@@ -598,7 +608,7 @@ function findScopeHits(text) {
   return dictionary.filter((keyword) => lower.includes(keyword));
 }
 
-function findIdentityFlags({ pdfText, firstPageText, sourceText, fileName, track }) {
+function findIdentityFlags({ pdfText, firstPageText, sourceText, fileName, track, metadataAuthor, sourceAuthorBlock }) {
   if (track !== "research") return [];
   const flags = [];
   const front = firstPageText.slice(0, 2600);
@@ -622,6 +632,12 @@ function findIdentityFlags({ pdfText, firstPageText, sourceText, fileName, track
   }
   if (/\b(vinuni|university|author|smith|nguyen|tran|le|team|lab)\b/i.test(fileLower)) {
     flags.push("Filename may compromise Research Track anonymity.");
+  }
+  if (metadataAuthor && !/anonymous|latex|tex/i.test(metadataAuthor)) {
+    flags.push("PDF metadata contains a non-anonymous author value.");
+  }
+  if (sourceAuthorBlock && !/anonymous/i.test(sourceAuthorBlock)) {
+    flags.push("TeX author block is not anonymous.");
   }
   return flags;
 }
@@ -671,6 +687,8 @@ async function analyzePackage() {
     sourceText,
     fileName: paperPdf.name,
     track: state.track,
+    metadataAuthor: pdf.metadata?.info?.Author || "",
+    sourceAuthorBlock: source.authorBlock,
   });
 
   return {
@@ -716,13 +734,13 @@ function buildChecks(analysis) {
   const formatPass =
     analysis.ieeeTexDetected ||
     (analysis.twoColumnScore >= 0.45 && analysis.pageSize.ok) ||
-    state.manual.portalReady;
+    state.manual.ieeeTemplate;
   const pageLimitPass = analysis.pageCount <= 10;
   const research = state.track === "research";
   const anonymityPass =
     !research ||
     (analysis.identityFlags.length === 0 &&
-      (analysis.hasAnonymousMarker || state.manual.portalReady || state.manual.authorshipFinal));
+      (analysis.hasAnonymousMarker || state.manual.anonymityReviewed));
   const reproducibilityPass = analysis.checklistDetected || state.manual.reproChecklist;
   const reproSignalsPass = analysis.reproSignals.length >= 4;
   const scopePass = analysis.scopeHits.length >= 2;
@@ -781,6 +799,7 @@ function buildChecks(analysis) {
       evidence: [
         analysis.ieeeTexDetected ? "IEEEtran detected in source" : `Two-column score: ${Math.round(analysis.twoColumnScore * 100)}%`,
         `Page size: ${analysis.pageSize.label}`,
+        state.manual.ieeeTemplate ? "Confirmed by author" : "No manual template confirmation",
         SOURCE.ieeeTemplate.label,
       ],
     },
@@ -797,6 +816,7 @@ function buildChecks(analysis) {
       evidence: research
         ? [
             analysis.hasAnonymousMarker ? "Anonymous marker detected" : "No explicit Anonymous marker detected",
+            state.manual.anonymityReviewed ? "Manual anonymization review confirmed" : "No manual anonymization confirmation",
             ...(analysis.identityFlags.length ? analysis.identityFlags : ["No obvious identity flag found"]),
           ]
         : ["Applied Track selected", SOURCE.applied.label],
